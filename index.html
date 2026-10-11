@@ -75,7 +75,7 @@ function calc(){let w=0,cost=0,val=0;
  $('tU').textContent=f(U)+' USDT';$('tH').textContent=f(U*r,0)+' ₴';$('sW').textContent=f(w);$('sB').textContent=f(bk,0);$('bn').textContent=f(bk,0)+' ₴';
  const pl=val-cost;$('pl').textContent=cost?sg(pl)+' USDT ('+sg(pl/cost*100)+'%)':'—';cost&&col($('pl'),pl);
  $('rl').textContent=sg(S.real)+' USDT';col($('rl'),S.real);
- $('st').textContent=(S.pxT?'Ціни: '+new Date(S.pxT).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'})+' · 1 USDT = '+f(r)+' ₴':'Ціни ще не завантажені')+(pxErr?' · не вдалося оновити':'');
+ $('st').textContent=(S.pxT?'Ціни'+(S.src?' ('+S.src+')':'')+': '+new Date(S.pxT).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'})+' · 1 USDT = '+f(r)+' ₴':'Ціни ще не завантажені')+(pxErr?' · не вдалося оновити':'');
  if(S.pxT){const t=td(),l=S.hist[S.hist.length-1],u=+U.toFixed(2),k=paidNow();if(l&&l.d===t){l.u=u;l.k=k}else S.hist.push({d:t,u,k});S.hist=S.hist.slice(-365)}
  extras(U,bk,r);save();chart()}
 const COL=['#1a7f5a','#3b82f6','#f59e0b','#a855f7','#ef4444','#14b8a6','#ec4899','#84cc16'];
@@ -115,8 +115,16 @@ const upd=()=>{rows();calc()};
 function chart(){const h=S.hist,s=$('ch');s.textContent='';$('hs').textContent=h.length<2?'Графік з’явиться за кілька днів':'';if(h.length<2)return;
  const v=h.map(x=>x.u),mn=Math.min(...v),rg=(Math.max(...v)-mn)||1;
  s.innerHTML='<polyline fill="none" stroke="var(--a)" stroke-width="2" points="'+v.map((y,i)=>(i/(v.length-1)*300).toFixed(1)+','+(62-(y-mn)/rg*54).toFixed(1)).join(' ')+'"/>'}
-async function px(){$('st').textContent='Оновлення цін…';pxErr=false;try{const j=await(await fetch('https://whitebit.com/api/v4/public/ticker')).json();
- S.assets.forEach(x=>{const t=j[x.s+'_USDT'];if(t)S.px[x.s]=+t.last_price});if(j.USDT_UAH)S.rate=+j.USDT_UAH.last_price;S.pxT=Date.now()}catch(e){pxErr=true}
+const gj=async u=>{const o={};if(window.AbortSignal&&AbortSignal.timeout)o.signal=AbortSignal.timeout(8000);const r=await fetch(u,o);if(r.ok===false)throw 0;return r.json()};
+async function getPx(){
+ try{const j=await gj('https://whitebit.com/api/v4/public/ticker'),o={};
+  Object.keys(j).forEach(k=>{if(k.endsWith('_USDT'))o[k.slice(0,-5)]=+j[k].last_price});if(!Object.keys(o).length)throw 0;
+  return{p:o,r:j.USDT_UAH&&+j.USDT_UAH.last_price,src:'WhiteBIT'}}catch(e){}
+ const j=await gj('https://api.binance.com/api/v3/ticker/price'),o={};let r;
+ j.forEach(t=>{if(t.symbol.endsWith('USDT'))o[t.symbol.slice(0,-4)]=+t.price;if(t.symbol==='USDTUAH')r=+t.price});
+ if(!Object.keys(o).length)throw 0;return{p:o,r,src:'Binance'}}
+async function px(){$('st').textContent='Оновлення цін…';pxErr=false;
+ try{const g=await getPx();S.assets.forEach(x=>{if(g.p[x.s]>0)S.px[x.s]=g.p[x.s]});if(g.r>0)S.rate=g.r;S.src=g.src;S.pxT=Date.now()}catch(e){pxErr=true}
  upd()}
 $('st').onclick=()=>{if(pxErr||!S.pxT){const v=num('Курс USDT/UAH');if(v>0){S.rate=v;calc()}}};
 $('rf').onclick=e=>{e.preventDefault();px()};
