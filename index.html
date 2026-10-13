@@ -24,6 +24,7 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 <div class="s m" style="margin-top:8px"><span>WhiteBIT: <b id="sW"></b> USDT</span><span>Банк: <b id="sB"></b> ₴</span></div>
 <div class="s m"><span>Прибуток по токенах</span><b id="pl"></b></div>
 <div class="s m"><span>Зафіксований прибуток</span><b id="rl"></b></div>
+<div class="s m"><span>Автопоповнень усього</span><b id="tp"></b></div>
 <div class="s m"><span id="st"></span><a href="#" id="rf" style="color:var(--a)">Оновити</a></div></div>
 <div class="c"><h2>Ціль</h2><input id="go" type="number" inputmode="decimal" placeholder="Сума цілі, ₴"><div class="pg"><i id="gb" style="width:0"></i></div><div class="m" id="gt"></div></div>
 <div class="c"><h2>Розподіл</h2><div class="bar" id="ab"></div><div id="al"></div></div>
@@ -31,7 +32,7 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 </section>
 
 <section data-tab="as" hidden>
-<div class="c"><h2>WhiteBIT</h2><div id="rows"></div>
+<div class="c"><div class="s"><h2>WhiteBIT</h2><button class="g sm" id="srt"></button></div><div id="rows"></div>
 <div class="g2" style="grid-template-columns:1fr auto;margin-top:8px"><input id="ns" placeholder="Новий токен, напр. DOGE"><button class="g" id="add">+</button></div>
 <div class="m">Натисніть на токен, щоб відкрити дії.</div></div>
 <div class="c"><h2>Банк (гривня)</h2>
@@ -48,9 +49,13 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 <section data-tab="lg" hidden><div class="c"><h2>Журнал</h2><div id="lg" class="m"></div></div></section>
 
 <section data-tab="mo" hidden>
-<div class="c"><h2>Вигляд</h2><button class="g" id="thm" style="width:100%"></button></div>
-<div class="c"><h2>Резервна копія</h2><div class="g2"><button class="g" id="ex">Експорт</button><button class="g" id="im">Імпорт</button></div>
-<div class="m">Дані лежать лише в цьому браузері. Іноді копіюйте їх у нотатки.</div></div>
+<div class="c"><h2>Вигляд</h2><button class="g" id="thm" style="width:100%"></button><div class="m" id="ver" style="margin-top:8px"></div></div>
+<div class="c"><h2>Резервна копія</h2>
+<div class="g2"><button id="ef">Зберегти файл</button><button id="es">Поділитися</button></div>
+<div class="g2"><button class="g" id="ei">Імпорт з файлу</button><button class="g" id="im">Вставити текст</button></div>
+<button class="g" id="ex" style="width:100%">Скопіювати текст</button><input type="file" id="ifl" accept=".json,application/json" hidden>
+<div class="m" style="margin-top:8px">Дані лежать лише в цьому браузері й зникнуть, якщо очистити дані сайту. Зберігайте файл копії, наприклад у Telegram («Збережене»).</div>
+<div class="m" style="margin-top:8px" id="pst"></div><button class="g" id="pb" style="width:100%;margin-top:6px">Захистити від автоочищення</button></div>
 </section>
 </main>
 <nav id="tabs"><button data-t="ov">Огляд</button><button data-t="as">Активи</button><button data-t="lg">Журнал</button><button data-t="mo">Ще</button></nav>
@@ -59,11 +64,14 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 const K='nk3',$=i=>document.getElementById(i),td=()=>new Date().toLocaleDateString('sv');
 const f=(n,d=2)=>(+n||0).toLocaleString('uk-UA',{maximumFractionDigits:d}),sg=n=>(n>0?'+':'')+f(n);
 const D=()=>({assets:[{s:'USDT',q:0,c:0}],bank:{bal:0,asOf:td(),amt:0,per:'m',day:1,paid:0,step:0,k0:0,end:''},log:[],hist:[],px:{},rate:41,pxT:0,real:0,goal:0,v:4,real0:0,hide:false});
-let S;try{const R=JSON.parse(localStorage.getItem(K)||'{}');S=Object.assign(D(),R);S.v=Object.keys(R).length?R.v:4}catch(e){S=D()}
+const okS=R=>!!R&&typeof R==='object'&&Array.isArray(R.assets)&&R.assets.every(x=>x&&typeof x.s==='string')&&(R.log===undefined||Array.isArray(R.log))&&(R.hist===undefined||Array.isArray(R.hist))&&(R.bank===undefined||(!!R.bank&&typeof R.bank==='object'));
+let S;try{const raw=localStorage.getItem(K)||'{}',R=JSON.parse(raw);
+ if(Object.keys(R).length&&!okS(R)){try{localStorage.setItem(K+'.bad',raw)}catch(e){}S=D()}
+ else{S=Object.assign(D(),R);S.v=Object.keys(R).length?R.v:4}}catch(e){S=D()}
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let pxErr=false;const pr=s=>s==='USDT'?1:(+S.px[s]||0);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
-const nv=s=>{const v=parseFloat(String(s==null?'':s).replace(',','.'));return v>=0?v:null};
+const nv=s=>{const v=parseFloat(String(s==null?'':s).replace(',','.'));return v>=0&&isFinite(v)?v:null};
 const col=(e,n)=>{e.className=n>=0?'up':'dn'};
 function bdUI(){const p=$('bp').value;$('bd').style.display=$('bdl').style.display=p==='d'?'none':'';$('bdl').textContent=p==='w'?'День тижня: 1 — понеділок … 7 — неділя':'День місяця (1–31)'}
 const match=(d,b)=>{if(b.per==='d')return true;if(b.per==='w')return(d.getDay()||7)==b.day;const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return d.getDate()==Math.min(+b.day||1,dim)};
@@ -92,7 +100,7 @@ function ask(title,fields,ok,note){return new Promise(res=>{
  $('mo').textContent=ok||'Зберегти';$('md').hidden=false;
  const end=v=>{$('md').hidden=true;$('mo').onclick=$('mc').onclick=null;document.onkeydown=null;res(v)};
  $('mo').onclick=()=>end(ins.map(i=>i.value));$('mc').onclick=()=>end(null);
- document.onkeydown=e=>{if(e.key==='Escape')end(null);else if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();end(ins.map(i=>i.value))}};
+ document.onkeydown=e=>{if(e.key==='Escape')end(null);else if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();const k=ins.indexOf(e.target);if(k>=0&&k<ins.length-1)ins[k+1].focus();else end(ins.map(i=>i.value))}};
  if(ins[0])setTimeout(()=>{ins[0].focus();ins[0].select&&ins[0].select()},50)})}
 async function editOp(i){const o=S.log[i],bak=Object.assign({},o),a=o.t==='a';
  const r=await ask('Змінити операцію · '+o.s,a?[{l:'Кількість',v:o.q}]:[{l:'Кількість',v:o.q},{l:'Ціна, USDT',v:o.p}],'Зберегти');if(!r)return;
@@ -122,9 +130,9 @@ function calc(){let w=0,cost=0,val=0;
  $('tU').textContent=f(U)+' USDT';$('tH').textContent=f(U*r,0)+' ₴';$('sW').textContent=f(w);$('sB').textContent=f(bk,0);$('bn').textContent=f(bk,0)+' ₴';
  const pl=val-cost;$('pl').textContent=cost?sg(pl)+' USDT ('+sg(pl/cost*100)+'%)':'—';cost&&col($('pl'),pl);
  $('rl').textContent=sg(S.real)+' USDT';col($('rl'),S.real);
- $('st').textContent=(S.pxT?'Ціни'+(S.src?' ('+S.src+')':'')+': '+new Date(S.pxT).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'})+' · 1 USDT = '+f(r)+' ₴':'Ціни ще не завантажені')+(pxErr?' · не вдалося оновити':'');
+ $('st').textContent=(S.pxT?'Ціни'+(S.src?' ('+S.src+')':'')+': '+new Date(S.pxT).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'})+' · 1 USDT = '+f(r)+' ₴':'Ціни ще не завантажені')+(pxErr?' · не вдалося оновити':'')+(S.pxT&&Date.now()-S.pxT>36e5?' · ⚠ ціни застарілі':'');
  if(S.pxT){const t=td(),l=S.hist[S.hist.length-1],u=+U.toFixed(2),k=paidNow();if(l&&l.d===t){l.u=u;l.k=k}else S.hist.push({d:t,u,k});S.hist=S.hist.slice(-365)}
- $('nx').textContent=nextTop();extras(U,bk,r);save();chart()}
+ $('nx').textContent=nextTop();$('tp').textContent=f(paidNow(),0)+' ₴';extras(U,bk,r);save();chart()}
 const COL=['#1a7f5a','#3b82f6','#f59e0b','#a855f7','#ef4444','#14b8a6','#ec4899','#84cc16'];
 function extras(U,bk,r){
  const H=U*r,g=+S.goal||0,gb=$('gb'),gt=$('gt');
@@ -152,7 +160,7 @@ const openSet=new Set();
 const icn=sym=>{const w=el('span','ic',sym[0]||'?');let h=0;for(const c of sym)h=(h*31+c.charCodeAt(0))%360;w.style.background='hsl('+h+' 50% 42%)';
  const i=new Image();i.alt='';i.onload=()=>{w.textContent='';w.style.background='transparent';w.append(i)};
  i.src='https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/'+sym.toLowerCase()+'.png';return w};
-function rows(){const b=$('rows');b.textContent='';S.assets.forEach(x=>{
+function rows(){const b=$('rows');b.textContent='';(S.sort==='a'?S.assets:[...S.assets].sort((m,n)=>n.q*pr(n.s)-m.q*pr(m.s))).forEach(x=>{
  const u=x.s==='USDT',p=pr(x.s),a=x.q&&x.c>0?x.c/x.q:0,card=el('div','as'+(openSet.has(x.s)?' open':'')),top=el('div','tk'),mid=el('div','tm'),rt=el('div','tr'),sub=el('div','m');
  mid.append(el('b',0,x.s),sub);
  if(u)sub.textContent=f(x.q,2)+' USDT';
@@ -201,20 +209,36 @@ $('bs').onclick=()=>{const v=parseFloat($('bi').value);if(!isNaN(v)){settle();S.
 const B=S.bank;$('ba').value=B.amt||'';$('bp').value=B.per;$('bd').value=B.day;$('bt').value=B.step||'';$('be').value=B.end||'';bdUI();
 ['ba','bp','bd','bt','be'].forEach(i=>$(i).onchange=()=>{const oa=+S.bank.amt||0,os=+S.bank.step||0;settle();const a=+$('ba').value||0,st=+$('bt').value||0;S.bank.amt=a;S.bank.step=st;S.bank.per=$('bp').value;S.bank.day=+$('bd').value||1;S.bank.end=$('be').value||'';if(a!==oa||st!==os)S.bank.k0=0;bdUI();calc()});
 $('ex').onclick=async()=>{const t=JSON.stringify(S);try{await navigator.clipboard.writeText(t);toast('Скопійовано. Збережіть у нотатках.')}catch(e){await ask('Копія даних',[{l:'Виділіть і скопіюйте весь текст',v:t,t:'area'}],'Закрити')}};
-$('im').onclick=async()=>{const r=await ask('Імпорт копії',[{l:'Вставте текст копії',v:'',t:'area'}],'Імпортувати');if(!r||!r[0].trim())return;
- try{const R=JSON.parse(r[0]);if(!R||!R.assets)throw 0;S=Object.assign(D(),R);S.v=R.v;save();location.reload()}catch(e){toast('Невірний формат')}};
+async function doImport(txt){let R;try{R=JSON.parse(txt);if(!okS(R))throw 0}catch(e){toast('Невірний формат');return}
+ if(!await ask('Замінити поточні дані?',[],'Замінити','Усі поточні дані буде замінено даними з копії.'))return;
+ S=Object.assign(D(),R);S.v=R.v;save();location.reload()}
+$('im').onclick=async()=>{const r=await ask('Імпорт копії',[{l:'Вставте текст копії',v:'',t:'area'}],'Імпортувати');if(!r||!r[0].trim())return;doImport(r[0])};
+$('ei').onclick=()=>$('ifl').click();
+$('ifl').onchange=e=>{const fl=e.target.files&&e.target.files[0];if(!fl)return;if(fl.size>5e6){toast('Файл завеликий');return}
+ const rd=new FileReader();rd.onload=()=>doImport(String(rd.result));rd.onerror=()=>toast('Не вдалося прочитати файл');rd.readAsText(fl);e.target.value=''};
+const bkName=()=>'nakopychennia-'+td()+'.json';
+function dl(){const b=new Blob([JSON.stringify(S)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=bkName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Файл збережено (зазвичай у «Завантаження»)')}
+$('ef').onclick=dl;
+$('es').onclick=async()=>{const file=new File([JSON.stringify(S)],bkName(),{type:'application/json'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'Копія «Мої накопичення»'})}catch(e){if(e&&e.name!=='AbortError')toast('Не вдалося поділитись')}}else dl()};
+const pUI=async()=>{let t='Захист від автоочищення: ';try{if(navigator.storage&&navigator.storage.persisted){const p=await navigator.storage.persisted();t+=p?'увімкнено':'не увімкнено';$('pb').hidden=p}else{t+='браузер не підтримує';$('pb').hidden=true}}catch(e){t+='невідомо'}$('pst').textContent=t};
+$('pb').onclick=async()=>{try{const ok=await navigator.storage.persist();toast(ok?'Захист увімкнено':'Браузер не дозволив. Зберігайте файл копії.')}catch(e){toast('Не вдалося увімкнути')}pUI()};
+const srtUI=()=>{$('srt').textContent=S.sort==='a'?'⇅ за додаванням':'⇅ за вартістю'};
+$('srt').onclick=()=>{S.sort=S.sort==='a'?'v':'a';srtUI();rows();save()};srtUI();pUI();
 if(S.v!==4){const r=replay(S.log);S.assets.forEach(x=>{if(x.s==='USDT')return;const z=r.st[x.s]||{q:0};if(Math.abs(z.q-(+x.q||0))>1e-9)S.log.push({d:td(),t:'a',s:x.s,q:+x.q||0})});S.real0=(+S.real||0)-replay(S.log).real;S.v=4}
 rebuild();
-['tU','tH','gt','al','ab','pd','ch','hs','rows','lg','nx'].forEach(i=>$(i).classList.add('sec'));['sW','pl','rl','bn'].forEach(i=>$(i).closest('.s').classList.add('sec'));
+['tU','tH','gt','al','ab','pd','ch','hs','rows','lg','nx'].forEach(i=>$(i).classList.add('sec'));['sW','pl','rl','bn','tp'].forEach(i=>$(i).closest('.s').classList.add('sec'));
 const hideUI=()=>{document.body.classList.toggle('hide',!!S.hide);$('eye').textContent=S.hide?'🙈':'👁'};
 function tab(n){document.querySelectorAll('[data-tab]').forEach(e=>e.hidden=e.dataset.tab!==n);document.querySelectorAll('#tabs button').forEach(b=>b.className=b.dataset.t===n?'on':'');scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));tab('ov');
 $('bto').onclick=()=>{$('bset').hidden=!$('bset').hidden};
 [7,30,0].forEach(n=>$('r'+n).onclick=()=>{RG=n;S.rg=n;chart();save()});
+const VER='v11 · 13.10.2026';$('ver').textContent='Версія додатка: '+VER;
 const thUI=()=>{document.documentElement.dataset.theme=S.theme||'auto';$('thm').textContent='Тема: '+({auto:'як на телефоні',light:'світла',dark:'темна'})[S.theme||'auto']};
 $('thm').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'auto'}[S.theme||'auto'];thUI();save()};thUI();
 $('eye').onclick=()=>{S.hide=!S.hide;hideUI();save()};hideUI();
 $('go').value=S.goal||'';$('go').oninput=()=>{S.goal=+$('go').value||0;calc()};
 upd();px();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker'in navigator){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js').catch(()=>{});
+ if(had)navigator.serviceWorker.addEventListener('controllerchange',()=>toast('Доступна нова версія. Перезавантажте сторінку.'))}
 </script></body></html>
