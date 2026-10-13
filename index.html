@@ -33,8 +33,8 @@ svg{width:100%;height:70px}.bar{display:flex;height:12px;border-radius:6px;overf
 <div class="s"><span>Зараз на рахунку</span><b id="bn"></b></div>
 <div class="g2" style="grid-template-columns:1fr auto"><input id="bi" type="number" inputmode="decimal" placeholder="Виправити залишок, ₴"><button class="g" id="bs">OK</button></div>
 <h2 style="margin-top:10px">Автопоповнення</h2>
-<div class="g2"><input id="ba" type="number" inputmode="decimal" placeholder="Сума найближчого поповнення, ₴"><select id="bp"><option value="d">щодня</option><option value="w">щотижня</option><option value="m">щомісяця</option></select></div>
-<input id="bt" type="number" inputmode="decimal" placeholder="Крок збільшення, ₴ (0 — без кроку)" style="margin-bottom:6px"><input id="bd" type="number" placeholder="День: тижня 1-7 (Пн-Нд) / місяця 1-31"><div class="m" style="margin-top:6px">Дата завершення (необов’язково)</div><input id="be" type="date">
+<div class="g2"><input id="ba" type="number" inputmode="decimal" placeholder="Найближча сума, ₴"><select id="bp"><option value="d">щодня</option><option value="w">щотижня</option><option value="m">щомісяця</option></select></div>
+<input id="bt" type="number" inputmode="decimal" placeholder="Крок збільшення, ₴ (0 — без кроку)" style="margin-bottom:6px"><div class="m" id="bdl" style="margin-top:2px"></div><input id="bd" type="number" inputmode="numeric"><div class="m" style="margin-top:6px">Дата завершення (необов’язково)</div><input id="be" type="date">
 <div class="m" style="margin-top:6px">Поповнення додаються автоматично за календарем. З кроком кожне наступне більше на цю суму (як «Марафонець»).</div></div>
 
 <div class="c"><h2>Розподіл</h2><div class="bar" id="ab"></div><div id="al"></div></div>
@@ -54,6 +54,7 @@ let pxErr=false;const pr=s=>s==='USDT'?1:(+S.px[s]||0);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const num=m=>{const v=parseFloat((prompt(m)||'').replace(',','.'));return v>=0?v:null};
 const col=(e,n)=>{e.className=n>=0?'up':'dn'};
+function bdUI(){const p=$('bp').value;$('bd').style.display=$('bdl').style.display=p==='d'?'none':'';$('bdl').textContent=p==='w'?'День тижня: 1 — понеділок … 7 — неділя':'День місяця (1–31)'}
 const match=(d,b)=>{if(b.per==='d')return true;if(b.per==='w')return(d.getDay()||7)==b.day;const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return d.getDate()==Math.min(+b.day||1,dim)};
 function topN(){const b=S.bank,d=new Date(b.asOf+'T00:00:00'),e=new Date();e.setHours(0,0,0,0);let n=0;
  if(b.end){const z=new Date(b.end+'T00:00:00');if(z<e)e.setTime(z.getTime())}
@@ -134,8 +135,8 @@ $('rf').onclick=e=>{e.preventDefault();px()};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-S.pxT>300000)px()});
 $('add').onclick=()=>{const s=$('ns').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(s&&!S.assets.some(x=>x.s===s)){S.assets.push({s,q:0,c:0});$('ns').value='';rows();px()}};
 $('bs').onclick=()=>{const v=parseFloat($('bi').value);if(!isNaN(v)){settle();S.bank.bal=v;$('bi').value='';calc()}};
-const B=S.bank;$('ba').value=B.amt||'';$('bp').value=B.per;$('bd').value=B.day;$('bt').value=B.step||'';$('be').value=B.end||'';
-['ba','bp','bd','bt','be'].forEach(i=>$(i).onchange=()=>{const oa=+S.bank.amt||0,os=+S.bank.step||0;settle();const a=+$('ba').value||0,st=+$('bt').value||0;S.bank.amt=a;S.bank.step=st;S.bank.per=$('bp').value;S.bank.day=+$('bd').value||1;S.bank.end=$('be').value||'';if(a!==oa||st!==os)S.bank.k0=0;calc()});
+const B=S.bank;$('ba').value=B.amt||'';$('bp').value=B.per;$('bd').value=B.day;$('bt').value=B.step||'';$('be').value=B.end||'';bdUI();
+['ba','bp','bd','bt','be'].forEach(i=>$(i).onchange=()=>{const oa=+S.bank.amt||0,os=+S.bank.step||0;settle();const a=+$('ba').value||0,st=+$('bt').value||0;S.bank.amt=a;S.bank.step=st;S.bank.per=$('bp').value;S.bank.day=+$('bd').value||1;S.bank.end=$('be').value||'';if(a!==oa||st!==os)S.bank.k0=0;bdUI();calc()});
 $('ex').onclick=async()=>{const t=JSON.stringify(S);try{await navigator.clipboard.writeText(t);alert('Скопійовано. Збережіть у нотатках.')}catch(e){prompt('Скопіюйте:',t)}};
 $('im').onclick=()=>{const t=prompt('Вставте копію');if(!t)return;try{S=Object.assign(D(),JSON.parse(t));save();location.reload()}catch(e){alert('Невірний формат')}};
 $('go').value=S.goal||'';$('go').oninput=()=>{S.goal=+$('go').value||0;calc()};
