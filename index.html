@@ -29,6 +29,7 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 <div class="c"><h2>Ціль</h2><input id="go" type="number" inputmode="decimal" placeholder="Сума цілі, ₴"><div class="pg"><i id="gb" style="width:0"></i></div><div class="m" id="gt"></div></div>
 <div class="c"><h2>Розподіл</h2><div class="bar" id="ab"></div><div id="al"></div></div>
 <div class="c"><div class="s"><h2>Динаміка</h2><span><button class="g sm" id="r7">7 дн</button><button class="g sm" id="r30">30 дн</button><button class="g sm" id="r0">Усе</button></span></div><svg id="ch" viewBox="0 0 300 100" preserveAspectRatio="none"></svg><div class="m" id="hs"></div><div id="pd" style="margin-top:8px"></div></div>
+<div class="c"><h2>Підсумок за місяць</h2><div id="ms"></div></div>
 </section>
 
 <section data-tab="as" hidden>
@@ -51,10 +52,10 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 <section data-tab="mo" hidden>
 <div class="c"><h2>Вигляд</h2><button class="g" id="thm" style="width:100%"></button><div class="m" id="ver" style="margin-top:8px"></div></div>
 <div class="c"><h2>Резервна копія</h2>
-<div class="g2"><button id="ef">Зберегти файл</button><button id="es">Поділитися</button></div>
+<button id="ef" style="width:100%;margin-bottom:6px">Зберегти файл</button>
 <div class="g2"><button class="g" id="ei">Імпорт з файлу</button><button class="g" id="im">Вставити текст</button></div>
 <button class="g" id="ex" style="width:100%">Скопіювати текст</button><input type="file" id="ifl" accept=".json,application/json" hidden>
-<div class="m" style="margin-top:8px">Дані лежать лише в цьому браузері й зникнуть, якщо очистити дані сайту. Зберігайте файл копії, наприклад у Telegram («Збережене»).</div>
+<div class="m" style="margin-top:8px">Дані лежать лише в цьому браузері й зникнуть, якщо очистити дані сайту. Файл копії лягає у «Завантаження»: надішліть його собі в Telegram («Збережене») або покладіть у хмару.</div>
 <div class="m" style="margin-top:8px" id="pst"></div><button class="g" id="pb" style="width:100%;margin-top:6px">Захистити від автоочищення</button></div>
 </section>
 </main>
@@ -85,12 +86,12 @@ const paidNow=()=>(S.bank.paid||0)+topSum(topN());
 const settle=()=>{const n=topN(),c=bankNow(),p=paidNow();S.bank.paid=p;S.bank.bal=c;S.bank.k0=(+S.bank.k0||0)+n;S.bank.asOf=td()};
 function eta(rem){const b=S.bank;let d=new Date();d.setHours(0,0,0,0);let k=(+b.k0||0)+topN(),acc=0;const end=b.end?new Date(b.end+'T00:00:00'):null;
  for(let i=0;i<3650;i++){d.setDate(d.getDate()+1);if(end&&d>end)return null;if(match(d,b)){acc+=(+b.amt||0)+(+b.step||0)*k;k++;if(acc>=rem)return d}}return null}
-function replay(L){const st={};let real=0,ok=true;
- L.forEach(o=>{const z=st[o.s]||(st[o.s]={q:0,c:0}),q=+o.q||0,p=+o.p||0;
-  if(o.t==='b'){z.q=+(z.q+q).toFixed(8);z.c+=q*p}
-  else if(o.t==='s'){const a=z.q?z.c/z.q:0;if(q>z.q+1e-9)ok=false;real+=(p-a)*q;z.c=a*(z.q-q);z.q=+(z.q-q).toFixed(8)}
+function replay(L){const st={},bm={},sm={},rm={};let real=0,ok=true;
+ L.forEach(o=>{const z=st[o.s]||(st[o.s]={q:0,c:0}),q=+o.q||0,p=+o.p||0,mk=String(o.d||'').slice(0,7);
+  if(o.t==='b'){z.q=+(z.q+q).toFixed(8);z.c+=q*p;bm[mk]=(bm[mk]||0)+q*p}
+  else if(o.t==='s'){const a=z.q?z.c/z.q:0;if(q>z.q+1e-9)ok=false;real+=(p-a)*q;sm[mk]=(sm[mk]||0)+q*p;rm[mk]=(rm[mk]||0)+(p-a)*q;z.c=a*(z.q-q);z.q=+(z.q-q).toFixed(8)}
   else if(o.t==='a'){const a=z.q?z.c/z.q:0;z.q=q;z.c=a*q}});
- return{st,real,ok}}
+ return{st,real,ok,bm,sm,rm}}
 function rebuild(){const r=replay(S.log);S.assets.forEach(x=>{if(x.s!=='USDT'){const z=r.st[x.s]||{q:0,c:0};x.q=z.q;x.c=z.c}});S.real=(S.real0||0)+r.real}
 let tm;const toast=m=>{const e=$('tt');e.textContent=m;e.style.opacity=1;clearTimeout(tm);tm=setTimeout(()=>e.style.opacity=0,3500)};
 function ask(title,fields,ok,note){return new Promise(res=>{
@@ -120,6 +121,22 @@ async function sell(x){const r=await ask('Продав '+x.s,[{l:'Кількіс
  S.log.push({d:td(),t:'s',s:x.s,q,p});rebuild();upd()}
 async function setq(x){const r=await ask('Точна кількість '+x.s,[{l:'Кількість',v:x.q}],'Зберегти');if(!r)return;const v=nv(r[0]);if(v==null){toast('Невірне число');return}
  if(x.s==='USDT')x.q=v;else{S.log.push({d:td(),t:'a',s:x.s,q:v});rebuild()}upd()}
+function months(U,k,r){const box=$('ms');box.textContent='';const R=replay(S.log),H=S.hist,now=td().slice(0,7);
+ const pv=new Date();pv.setDate(1);pv.setMonth(pv.getMonth()-1);let shown=0;
+ [now,pv.toLocaleDateString('sv').slice(0,7)].forEach(ym=>{
+  const[y,m]=ym.split('-').map(Number),st=ym+'-01',nx=new Date(y,m,1).toLocaleDateString('sv'),cur=ym===now;
+  let base=null,lab='';for(let i=H.length-1;i>=0;i--)if(H[i].d<st){base=H[i];break}
+  if(!base){base=H.find(x=>x.d>=st&&x.d<nx);if(base)lab=' (з '+base.d.slice(8)+'.'+base.d.slice(5,7)+')'}
+  let end=null;if(cur)end={u:U,k};else for(let i=H.length-1;i>=0;i--)if(H[i].d<nx){end=H[i];break}
+  if(!base||!end||end===base||(cur&&base.d===td()))return;
+  const dU=end.u-base.u,inf=((end.k||0)-(base.k||0))/r,b=el('div');b.style.marginBottom='12px';
+  b.append(el('b',0,new Date(y,m-1,1).toLocaleDateString('uk-UA',{month:'long',year:'numeric'})+lab));
+  const row=(a,v,c)=>{const d=el('div','s m'),e=el('b',0,v);if(c!=null)col(e,c);d.append(el('span',0,a),e);b.append(d)};
+  row('Було → стало',f(base.u)+' → '+f(end.u)+' USDT');row('Зміна',sg(dU)+' USDT',dU);row('з них внески / ціни й правки',sg(inf)+' / '+sg(dU-inf));
+  if(R.bm[ym]||R.sm[ym])row('Куплено / продано токенів',f(R.bm[ym]||0)+' / '+f(R.sm[ym]||0)+' USDT');
+  if(R.rm[ym])row('Зафіксований прибуток',sg(R.rm[ym])+' USDT',R.rm[ym]);
+  box.append(b);shown++});
+ if(!shown)box.textContent='Поки немає даних. З’являться після кількох днів використання.'}
 function nextTop(){const b=S.bank;if(!(+b.amt||+b.step))return'Автопоповнення не налаштоване';const d=new Date();d.setHours(0,0,0,0);
  const end=b.end?new Date(b.end+'T00:00:00'):null,k=(+b.k0||0)+topN();
  for(let i=0;i<400;i++){d.setDate(d.getDate()+1);if(end&&d>end)break;if(match(d,b))return'Наступне: '+d.toLocaleDateString('uk-UA',{day:'numeric',month:'long'})+' — '+f((+b.amt||0)+(+b.step||0)*k,0)+' ₴'}
@@ -155,7 +172,7 @@ function extras(U,bk,r){
   let e=null,lab=n+' дн.';for(let i=S.hist.length-1;i>=0;i--)if(S.hist[i].d<=cs){e=S.hist[i];break}
   if(!e){e=S.hist[0];lab='З '+e.d}
   const dU=U-e.u,inf=(k-(e.k||0))/r,row=el('div','s'),b=el('b',0,sg(dU)+' USDT');col(b,dU);row.append(el('span',0,lab+': '),b);pd.append(row);
-  pd.append(el('div','m','внески '+sg(inf)+' · ціни та правки '+sg(dU-inf)))})}
+  pd.append(el('div','m','внески '+sg(inf)+' · ціни та правки '+sg(dU-inf)))});months(U,k,r)}
 const openSet=new Set();
 const icn=sym=>{const w=el('span','ic',sym[0]||'?');let h=0;for(const c of sym)h=(h*31+c.charCodeAt(0))%360;w.style.background='hsl('+h+' 50% 42%)';
  const i=new Image();i.alt='';i.onload=()=>{w.textContent='';w.style.background='transparent';w.append(i)};
@@ -219,21 +236,19 @@ $('ifl').onchange=e=>{const fl=e.target.files&&e.target.files[0];if(!fl)return;i
 const bkName=()=>'nakopychennia-'+td()+'.json';
 function dl(){const b=new Blob([JSON.stringify(S)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=bkName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Файл збережено (зазвичай у «Завантаження»)')}
 $('ef').onclick=dl;
-$('es').onclick=async()=>{const file=new File([JSON.stringify(S)],bkName(),{type:'application/json'});
- if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'Копія «Мої накопичення»'})}catch(e){if(e&&e.name!=='AbortError')toast('Не вдалося поділитись')}}else dl()};
 const pUI=async()=>{let t='Захист від автоочищення: ';try{if(navigator.storage&&navigator.storage.persisted){const p=await navigator.storage.persisted();t+=p?'увімкнено':'не увімкнено';$('pb').hidden=p}else{t+='браузер не підтримує';$('pb').hidden=true}}catch(e){t+='невідомо'}$('pst').textContent=t};
 $('pb').onclick=async()=>{try{const ok=await navigator.storage.persist();toast(ok?'Захист увімкнено':'Браузер не дозволив. Зберігайте файл копії.')}catch(e){toast('Не вдалося увімкнути')}pUI()};
 const srtUI=()=>{$('srt').textContent=S.sort==='a'?'⇅ за додаванням':'⇅ за вартістю'};
 $('srt').onclick=()=>{S.sort=S.sort==='a'?'v':'a';srtUI();rows();save()};srtUI();pUI();
 if(S.v!==4){const r=replay(S.log);S.assets.forEach(x=>{if(x.s==='USDT')return;const z=r.st[x.s]||{q:0};if(Math.abs(z.q-(+x.q||0))>1e-9)S.log.push({d:td(),t:'a',s:x.s,q:+x.q||0})});S.real0=(+S.real||0)-replay(S.log).real;S.v=4}
 rebuild();
-['tU','tH','gt','al','ab','pd','ch','hs','rows','lg','nx'].forEach(i=>$(i).classList.add('sec'));['sW','pl','rl','bn','tp'].forEach(i=>$(i).closest('.s').classList.add('sec'));
+['tU','tH','gt','al','ab','pd','ch','hs','rows','lg','nx','ms'].forEach(i=>$(i).classList.add('sec'));['sW','pl','rl','bn','tp'].forEach(i=>$(i).closest('.s').classList.add('sec'));
 const hideUI=()=>{document.body.classList.toggle('hide',!!S.hide);$('eye').textContent=S.hide?'🙈':'👁'};
 function tab(n){document.querySelectorAll('[data-tab]').forEach(e=>e.hidden=e.dataset.tab!==n);document.querySelectorAll('#tabs button').forEach(b=>b.className=b.dataset.t===n?'on':'');scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));tab('ov');
 $('bto').onclick=()=>{$('bset').hidden=!$('bset').hidden};
 [7,30,0].forEach(n=>$('r'+n).onclick=()=>{RG=n;S.rg=n;chart();save()});
-const VER='v11 · 13.10.2026';$('ver').textContent='Версія додатка: '+VER;
+const VER='бета · збірка 13 · 13.10.2026';$('ver').textContent='Версія додатка: '+VER;
 const thUI=()=>{document.documentElement.dataset.theme=S.theme||'auto';$('thm').textContent='Тема: '+({auto:'як на телефоні',light:'світла',dark:'темна'})[S.theme||'auto']};
 $('thm').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'auto'}[S.theme||'auto'];thUI();save()};thUI();
 $('eye').onclick=()=>{S.hide=!S.hide;hideUI();save()};hideUI();
