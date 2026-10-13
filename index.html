@@ -33,9 +33,9 @@ svg{width:100%;height:70px}.bar{display:flex;height:12px;border-radius:6px;overf
 <div class="s"><span>Зараз на рахунку</span><b id="bn"></b></div>
 <div class="g2" style="grid-template-columns:1fr auto"><input id="bi" type="number" inputmode="decimal" placeholder="Виправити залишок, ₴"><button class="g" id="bs">OK</button></div>
 <h2 style="margin-top:10px">Автопоповнення</h2>
-<div class="g2"><input id="ba" type="number" inputmode="decimal" placeholder="Сума, ₴"><select id="bp"><option value="d">щодня</option><option value="w">щотижня</option><option value="m">щомісяця</option></select></div>
-<input id="bd" type="number" placeholder="День: тижня 1-7 (Пн-Нд) / місяця 1-31">
-<div class="m" style="margin-top:6px">Поповнення додаються автоматично за календарем.</div></div>
+<div class="g2"><input id="ba" type="number" inputmode="decimal" placeholder="Сума найближчого поповнення, ₴"><select id="bp"><option value="d">щодня</option><option value="w">щотижня</option><option value="m">щомісяця</option></select></div>
+<input id="bt" type="number" inputmode="decimal" placeholder="Крок збільшення, ₴ (0 — без кроку)" style="margin-bottom:6px"><input id="bd" type="number" placeholder="День: тижня 1-7 (Пн-Нд) / місяця 1-31"><div class="m" style="margin-top:6px">Дата завершення (необов’язково)</div><input id="be" type="date">
+<div class="m" style="margin-top:6px">Поповнення додаються автоматично за календарем. З кроком кожне наступне більше на цю суму (як «Марафонець»).</div></div>
 
 <div class="c"><h2>Розподіл</h2><div class="bar" id="ab"></div><div id="al"></div></div>
 
@@ -47,21 +47,24 @@ svg{width:100%;height:70px}.bar{display:flex;height:12px;border-radius:6px;overf
 <script>
 const K='nk3',$=i=>document.getElementById(i),td=()=>new Date().toLocaleDateString('sv');
 const f=(n,d=2)=>(+n||0).toLocaleString('uk-UA',{maximumFractionDigits:d}),sg=n=>(n>0?'+':'')+f(n);
-const D=()=>({assets:[{s:'USDT',q:0,c:0}],bank:{bal:0,asOf:td(),amt:0,per:'m',day:1,paid:0},log:[],hist:[],px:{},rate:41,pxT:0,real:0,goal:0});
+const D=()=>({assets:[{s:'USDT',q:0,c:0}],bank:{bal:0,asOf:td(),amt:0,per:'m',day:1,paid:0,step:0,k0:0,end:''},log:[],hist:[],px:{},rate:41,pxT:0,real:0,goal:0});
 let S;try{S=Object.assign(D(),JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){S=D()}
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let pxErr=false;const pr=s=>s==='USDT'?1:(+S.px[s]||0);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const num=m=>{const v=parseFloat((prompt(m)||'').replace(',','.'));return v>=0?v:null};
 const col=(e,n)=>{e.className=n>=0?'up':'dn'};
+const match=(d,b)=>{if(b.per==='d')return true;if(b.per==='w')return(d.getDay()||7)==b.day;const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return d.getDate()==Math.min(+b.day||1,dim)};
 function topN(){const b=S.bank,d=new Date(b.asOf+'T00:00:00'),e=new Date();e.setHours(0,0,0,0);let n=0;
- if(+b.amt)for(d.setDate(d.getDate()+1);d<=e;d.setDate(d.getDate()+1)){
-  if(b.per==='d')n++;else if(b.per==='w'){if((d.getDay()||7)==b.day)n++}
-  else{const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();if(d.getDate()==Math.min(+b.day||1,dim))n++}}
+ if(b.end){const z=new Date(b.end+'T00:00:00');if(z<e)e.setTime(z.getTime())}
+ if(+b.amt||+b.step)for(d.setDate(d.getDate()+1);d<=e;d.setDate(d.getDate()+1))if(match(d,b))n++;
  return n}
-const bankNow=()=>(+S.bank.bal||0)+topN()*(+S.bank.amt||0);
-const paidNow=()=>(S.bank.paid||0)+topN()*(+S.bank.amt||0);
-const settle=()=>{const c=bankNow(),p=paidNow();S.bank.paid=p;S.bank.bal=c;S.bank.asOf=td()};
+const topSum=n=>{const b=S.bank,a=+b.amt||0,st=+b.step||0,k=+b.k0||0;return n*a+st*(n*k+n*(n-1)/2)};
+const bankNow=()=>(+S.bank.bal||0)+topSum(topN());
+const paidNow=()=>(S.bank.paid||0)+topSum(topN());
+const settle=()=>{const n=topN(),c=bankNow(),p=paidNow();S.bank.paid=p;S.bank.bal=c;S.bank.k0=(+S.bank.k0||0)+n;S.bank.asOf=td()};
+function eta(rem){const b=S.bank;let d=new Date();d.setHours(0,0,0,0);let k=(+b.k0||0)+topN(),acc=0;const end=b.end?new Date(b.end+'T00:00:00'):null;
+ for(let i=0;i<3650;i++){d.setDate(d.getDate()+1);if(end&&d>end)return null;if(match(d,b)){acc+=(+b.amt||0)+(+b.step||0)*k;k++;if(acc>=rem)return d}}return null}
 function buy(x){const q=num('Скільки купили '+x.s+'?');if(!(q>0))return;
  let p=num('Ціна покупки, USDT (порожньо — поточна '+f(pr(x.s),6)+')');if(!(p>0))p=pr(x.s);
  x.q=+((+x.q||0)+q).toFixed(8);x.c=(+x.c||0)+q*p;S.log.push({d:td(),t:'b',s:x.s,q,p});upd()}
@@ -83,11 +86,11 @@ function extras(U,bk,r){
  const H=U*r,g=+S.goal||0,gb=$('gb'),gt=$('gt');
  if(!(g>0)){gb.style.width='0';gt.textContent='Задайте суму цілі, щоб бачити прогрес'}
  else{gb.style.width=Math.min(100,H/g*100)+'%';let t=f(Math.min(100,H/g*100),1)+'% · '+f(H,0)+' з '+f(g,0)+' ₴';
-  const A=+S.bank.amt||0,mo=S.bank.per==='d'?A*30.44:S.bank.per==='w'?A*52/12:A,rem=g-H;
+  const rem=g-H;
   if(rem<=0)t+=' · Ціль досягнута 🎉';
-  else if(mo>0){const m=rem/mo;if(m>600)t+=' · понад 50 років при поточних поповненнях';
-   else{const d=new Date();d.setDate(d.getDate()+Math.ceil(m*30.44));t+=' · ≈ '+f(m,1)+' міс., до '+d.toLocaleDateString('uk-UA')+' (лише з автопоповнень, без урахування курсу)'}}
-  else t+=' · додайте автопоповнення, щоб бачити дату';
+  else if(!(+S.bank.amt||+S.bank.step))t+=' · додайте автопоповнення, щоб бачити дату';
+  else{const d=eta(rem);if(d)t+=' · ≈ '+f(Math.ceil((d-new Date())/864e5/30.44),0)+' міс., до '+d.toLocaleDateString('uk-UA')+' (лише з автопоповнень, без урахування курсу)';
+   else t+=' · при поточних автопоповненнях ціль не досягається за 10 років або до дати завершення'}
   gt.textContent=t}
  const it=S.assets.map(x=>[x.s,x.q*pr(x.s)]);it.push(['Банк ₴',bk/r]);
  const L=it.filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]),ab=$('ab'),al=$('al');ab.textContent='';al.textContent='';
@@ -131,8 +134,8 @@ $('rf').onclick=e=>{e.preventDefault();px()};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-S.pxT>300000)px()});
 $('add').onclick=()=>{const s=$('ns').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(s&&!S.assets.some(x=>x.s===s)){S.assets.push({s,q:0,c:0});$('ns').value='';rows();px()}};
 $('bs').onclick=()=>{const v=parseFloat($('bi').value);if(!isNaN(v)){settle();S.bank.bal=v;$('bi').value='';calc()}};
-const B=S.bank;$('ba').value=B.amt||'';$('bp').value=B.per;$('bd').value=B.day;
-['ba','bp','bd'].forEach(i=>$(i).onchange=()=>{settle();S.bank.amt=+$('ba').value||0;S.bank.per=$('bp').value;S.bank.day=+$('bd').value||1;calc()});
+const B=S.bank;$('ba').value=B.amt||'';$('bp').value=B.per;$('bd').value=B.day;$('bt').value=B.step||'';$('be').value=B.end||'';
+['ba','bp','bd','bt','be'].forEach(i=>$(i).onchange=()=>{const oa=+S.bank.amt||0,os=+S.bank.step||0;settle();const a=+$('ba').value||0,st=+$('bt').value||0;S.bank.amt=a;S.bank.step=st;S.bank.per=$('bp').value;S.bank.day=+$('bd').value||1;S.bank.end=$('be').value||'';if(a!==oa||st!==os)S.bank.k0=0;calc()});
 $('ex').onclick=async()=>{const t=JSON.stringify(S);try{await navigator.clipboard.writeText(t);alert('Скопійовано. Збережіть у нотатках.')}catch(e){prompt('Скопіюйте:',t)}};
 $('im').onclick=()=>{const t=prompt('Вставте копію');if(!t)return;try{S=Object.assign(D(),JSON.parse(t));save();location.reload()}catch(e){alert('Невірний формат')}};
 $('go').value=S.goal||'';$('go').oninput=()=>{S.goal=+$('go').value||0;calc()};
