@@ -41,10 +41,11 @@ svg{width:100%;height:110px}main{padding-bottom:96px}.as{cursor:pointer}.tk{disp
 <div class="m" id="nx"></div>
 <div class="g2" style="grid-template-columns:1fr auto;margin-top:8px"><input id="bi" type="number" inputmode="decimal" placeholder="Виправити залишок, ₴"><button class="g" id="bs">OK</button></div>
 <div class="g2"><button class="g" id="bad">+ Внесок / зняття</button><button class="g" id="bto">Автопоповнення</button></div>
+<button class="g" id="bnow" style="width:100%;margin-bottom:6px">Нарахувати наступне зараз</button>
 <div id="bset" hidden style="margin-top:6px">
-<div class="g2"><input id="ba" type="number" inputmode="decimal" placeholder="Найближча сума, ₴"><select id="bp"><option value="d">щодня</option><option value="w">щотижня</option><option value="m">щомісяця</option></select></div>
+<div class="g2"><input id="ba" type="number" inputmode="decimal" placeholder="Найближча сума, ₴"><select id="bp"><option value="d">щодня</option><option value="w">щотижня</option><option value="m">щомісяця</option><option value="n">кожні N днів</option></select></div>
 <input id="bt" type="number" inputmode="decimal" placeholder="Крок збільшення, ₴ (0 — без кроку)" style="margin-bottom:6px"><div class="m" id="bdl" style="margin-top:2px"></div><input id="bd" type="number" inputmode="numeric">
-<div class="m" style="margin-top:6px">Почати з дати (порожньо — з завтрашнього дня)</div><input id="bf" type="date">
+<div class="m" style="margin-top:6px">Нарахувати з дати, включно (порожньо — з сьогодні)</div><input id="bf" type="date">
 <div class="m" style="margin-top:6px">Дата завершення (необов’язково)</div><input id="be" type="date">
 <div class="g2" style="margin-top:8px"><button id="bsv">Зберегти</button><button class="g" id="boff">Вимкнути</button></div>
 <div class="m" style="margin-top:6px">Налаштування застосовуються лише після «Зберегти». Нарахування створюються автоматично й з’являються в списку нижче: їх можна змінити (✎) або видалити (✕). З кроком кожне наступне поповнення більше на цю суму (як «Марафонець»).</div></div>
@@ -79,8 +80,8 @@ let pxErr=false;const pr=s=>s==='USDT'?1:(+S.px[s]||0);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const nv=s=>{const v=parseFloat(String(s==null?'':s).replace(',','.'));return v>=0&&isFinite(v)?v:null};
 const col=(e,n)=>{e.className=n>=0?'up':'dn'};
-function bdUI(){const p=$('bp').value;$('bd').style.display=$('bdl').style.display=p==='d'?'none':'';$('bdl').textContent=p==='w'?'День тижня: 1 — понеділок … 7 — неділя':'День місяця (1–31)'}
-const match=(d,b)=>{if(b.per==='d')return true;if(b.per==='w')return(d.getDay()||7)==b.day;const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return d.getDate()==Math.min(+b.day||1,dim)};
+function bdUI(){const p=$('bp').value;$('bd').style.display=$('bdl').style.display=p==='d'?'none':'';$('bdl').textContent=p==='w'?'День тижня: 1 — понеділок … 7 — неділя':p==='n'?'Кожні скільки днів (рахуючи від першого нарахування)':'День місяця (1–31)'}
+const match=(d,b)=>{if(b.per==='d')return true;if(b.per==='n'){const a=new Date((b.anc||td())+'T00:00:00');return Math.round((d-a)/864e5)%Math.max(1,+b.day||1)===0}if(b.per==='w')return(d.getDay()||7)==b.day;const dim=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return d.getDate()==Math.min(+b.day||1,dim)};
 const bankNow=()=>+S.bank.bal||0,paidNow=()=>+S.bank.paid||0,r2=x=>Math.round(x*100)/100,nn=s=>{const v=parseFloat(String(s==null?'':s).replace(',','.'));return isFinite(v)?v:null},dayStr=d=>d.toLocaleDateString('sv');
 function gen(){const b=S.bank,t=td();let n=0;if(!S.blog)S.blog=[];
  if(+b.amt||+b.step){let lim=t;if(b.end&&b.end<lim)lim=b.end;
@@ -237,11 +238,15 @@ $('bsv').onclick=()=>{tick();const b=S.bank,a=nn($('ba').value)||0,st=nn($('bt')
  if(!(a>0||st>0)){toast('Вкажіть суму поповнення');return}
  if(per==='w'&&(day<1||day>7)){toast('День тижня: від 1 до 7');return}
  if(per==='m'&&(day<1||day>31)){toast('День місяця: від 1 до 31');return}
+ if(per==='n'&&day<1){toast('Вкажіть, кожні скільки днів');return}
  const s=$('bf').value;b.amt=a;b.step=st;b.per=per;b.day=day;b.end=$('be').value||'';b.k=0;
- if(s){const d=new Date(s+'T00:00:00');d.setDate(d.getDate()-1);b.last=dayStr(d)}else b.last=td();
+ b.anc=s||td();const had=S.blog.some(o=>o.auto&&o.d===td());
+ if(s){const d=new Date(s+'T00:00:00');d.setDate(d.getDate()-1);b.last=dayStr(d)}else if(had)b.last=td();else{const d=new Date();d.setDate(d.getDate()-1);b.last=dayStr(d)}
  const n=gen();fillBank();calc();toast(n?'Збережено. Нараховано поповнень: '+n:'Збережено')};
 $('boff').onclick=()=>{tick();const b=S.bank;b.amt=0;b.step=0;b.k=0;b.last=td();fillBank();calc();toast('Автопоповнення вимкнено')};
-$('bad').onclick=()=>bAdd();$('bkr').onclick=()=>tab('mo');
+$('bad').onclick=()=>bAdd();
+$('bnow').onclick=()=>{tick();const b=S.bank;if(!(+b.amt||+b.step)){toast('Спершу налаштуйте автопоповнення');return}
+ const a=r2((+b.amt||0)+(+b.step||0)*(+b.k||0));b.k=(+b.k||0)+1;b.bal=r2((+b.bal||0)+a);b.paid=r2((+b.paid||0)+a);S.blog.push({d:td(),a,auto:1});b.last=td();upd();toast('Нараховано '+f(a,0)+' ₴')};$('bkr').onclick=()=>tab('mo');
 async function bAdd(){tick();const r=await ask('Внесок або зняття',[{l:'Сума, ₴ (зі знаком «−» — зняття)',v:''}],'Додати');if(!r)return;const v=nn(r[0]);if(!v){toast('Введіть суму');return}
  S.bank.bal=r2((+S.bank.bal||0)+v);S.blog.push({d:td(),a:v,auto:0});upd()}
 async function bEdit(i){const o=S.blog[i],r=await ask('Змінити поповнення · '+o.d,[{l:'Сума, ₴',v:o.a}],'Зберегти');if(!r)return;const v=nn(r[0]);if(!v){toast('Введіть суму');return}
@@ -281,7 +286,7 @@ function tab(n){document.querySelectorAll('[data-tab]').forEach(e=>e.hidden=e.da
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));tab('ov');
 $('bto').onclick=()=>{$('bset').hidden=!$('bset').hidden};
 [7,30,0].forEach(n=>$('r'+n).onclick=()=>{RG=n;S.rg=n;chart();save()});
-const VER='бета · збірка 14 · 14.10.2026';$('ver').textContent='Версія додатка: '+VER;
+const VER='бета · збірка 15 · 14.10.2026';$('ver').textContent='Версія додатка: '+VER;
 const thUI=()=>{document.documentElement.dataset.theme=S.theme||'auto';$('thm').textContent='Тема: '+({auto:'як на телефоні',light:'світла',dark:'темна'})[S.theme||'auto']};
 $('thm').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'auto'}[S.theme||'auto'];thUI();save()};thUI();
 $('eye').onclick=()=>{S.hide=!S.hide;hideUI();save()};hideUI();
