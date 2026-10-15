@@ -41,19 +41,24 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 .sm{padding:3px 8px;font-size:12px}
 .mb{border-radius:10px}
 .warn{padding:6px 8px;font-size:13px;font-weight:500}
+
+.det{display:none;margin-top:3px}.as.open .det{display:block}.tr{white-space:nowrap}
+.as .tm .m{font-size:12px}
+#tabs button{font-size:13px}
+.big{margin-top:2px}
 </style></head><body><main>
 <div class="s"><h1>Мої накопичення</h1><button class="g sm" id="eye">👁</button></div>
 
 <section data-tab="ov">
 <div class="c" id="pc" hidden><h2>Очікуються нарахування</h2><div id="pl2"></div></div>
-<div class="c"><div class="m">Разом</div><div class="big" id="tU"></div><div class="m" id="tH"></div>
-<div class="s m" style="margin-top:8px"><span>WhiteBIT: <b id="sW"></b> USDT</span><span>Банк: <b id="sB"></b> ₴</span></div>
+<div class="c"><div class="m">Разом</div><div class="big" id="tH"></div><div class="m" id="tU"></div>
+<div class="s m" style="margin-top:6px"><span>WhiteBIT <b id="sW"></b> USDT · банк <b id="sB"></b> ₴</span></div>
 <div class="s m"><span>Прибуток по токенах</span><b id="pl"></b></div>
-<div class="s m"><span>Зафіксований прибуток</span><b id="rl"></b></div>
 <div class="s m"><span id="st"></span><a href="#" id="rf" style="color:var(--a)">Оновити</a></div><div class="m" id="bkr" style="cursor:pointer;margin-top:4px"></div></div>
+<details><summary>Докладніше</summary>
+<div class="c"><div class="s m"><span>Зафіксований прибуток</span><b id="rl"></b></div></div>
 <div class="c"><h2>Ціль</h2><input id="go" type="number" inputmode="decimal" placeholder="Сума цілі, ₴"><div class="pg"><i id="gb" style="width:0"></i></div><div class="m" id="gt"></div></div>
 <div class="c"><div class="s"><h2>Динаміка</h2><span><button class="g sm" id="r7">7 дн</button><button class="g sm" id="r30">30 дн</button><button class="g sm" id="r0">Усе</button></span></div><div style="margin-bottom:6px"><button class="sm" id="vU" style="margin:0 4px 0 0">Сума</button><button class="g sm" id="vR" style="margin:0">Курс USDT/₴</button></div><svg id="ch" viewBox="0 0 300 100" preserveAspectRatio="none"></svg><div class="m" id="hs"></div><div id="pd" style="margin-top:8px"></div></div>
-<details><summary>Докладніше: розподіл і підсумок за місяць</summary>
 <div class="c"><h2>Розподіл</h2><div class="bar" id="ab"></div><div id="al"></div></div>
 <div class="c"><h2>Підсумок за місяць</h2><div id="ms"></div></div>
 </details>
@@ -63,6 +68,8 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 <div class="c"><div class="s"><h2>WhiteBIT</h2><button class="g sm" id="srt"></button></div><div id="rows"></div>
 <div class="g2" style="grid-template-columns:1fr auto;margin-top:8px"><input id="ns" placeholder="Новий токен, напр. DOGE"><button class="g" id="add">+</button></div>
 <div class="m">Натисніть на токен, щоб відкрити дії.</div></div>
+</section>
+<section data-tab="bk" hidden>
 <div class="c"><h2>Банк (гривня)</h2>
 <div class="s"><span>Зараз на рахунку</span><b id="bn"></b></div>
 <div class="m" id="nx"></div>
@@ -82,7 +89,6 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 <div class="m" style="margin-top:6px">Зелені дні — нараховано, з рамкою — заплановано. Торкнись дня, щоб додати, змінити або видалити нарахування (сума 0 — видалити).</div></div>
 </section>
 
-<section data-tab="lg" hidden><div class="c"><h2>Журнал</h2><div id="lg" class="m"></div></div></section>
 
 <section data-tab="mo" hidden>
 <div class="c"><h2>Вигляд</h2><button class="g" id="thm" style="width:100%"></button><div class="m" id="ver" style="margin-top:8px"></div></div>
@@ -97,9 +103,10 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 <input type="file" id="ifl" accept=".json,application/json" hidden>
 <div class="m" style="margin-top:8px">Дані лежать лише в цьому браузері й зникнуть, якщо очистити дані сайту. Файл копії лягає у «Завантаження»: надішліть його собі в Telegram («Збережене») або покладіть у хмару.</div>
 <div class="m" style="margin-top:8px" id="pst"></div><button class="g" id="pb" style="width:100%;margin-top:6px">Захистити від автоочищення</button></div>
+<details><summary>Журнал операцій</summary><div class="c"><div id="lg" class="m"></div></div></details>
 </section>
 </main>
-<nav id="tabs"><button data-t="ov">Огляд</button><button data-t="as">Активи</button><button data-t="lg">Журнал</button><button data-t="mo">Ще</button></nav>
+<nav id="tabs"><button data-t="ov">Головна</button><button data-t="as">Токени</button><button data-t="bk">Банк</button><button data-t="mo">Ще</button></nav>
 <div id="md" hidden><div class="mb"><h3 id="mt"></h3><div id="mf"></div><div class="mr"><button class="g" id="mc">Скасувати</button><button id="mo">Зберегти</button></div></div></div><div id="tt"></div><div id="ub"><span id="ut"></span><button id="uu">Скасувати</button></div>
 <script>
 const K='nk3',$=i=>document.getElementById(i),td=()=>new Date().toLocaleDateString('sv');
@@ -227,15 +234,15 @@ function extras(U,bk,r){
 const openSet=new Set();
 const icn=sym=>{const w=el('span','ic',sym[0]||'?');let h=0;for(const c of sym)h=(h*31+c.charCodeAt(0))%360;w.style.background='hsl('+h+' 50% 42%)';const i=new Image();i.alt='';i.onload=()=>{w.textContent='';w.style.background='transparent';w.append(i)};i.src='https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/'+sym.toLowerCase()+'.png';return w};
 function rows(){const b=$('rows');b.textContent='';(S.sort==='a'?S.assets:[...S.assets].sort((m,n)=>n.q*pr(n.s)-m.q*pr(m.s))).forEach(x=>{
- const u=x.s==='USDT',p=pr(x.s),a=x.q&&x.c>0?x.c/x.q:0,card=el('div','as'+(openSet.has(x.s)?' open':'')),top=el('div','tk'),mid=el('div','tm'),rt=el('div','tr'),sub=el('div','m');
+ let det=null;const u=x.s==='USDT',p=pr(x.s),a=x.q&&x.c>0?x.c/x.q:0,card=el('div','as'+(openSet.has(x.s)?' open':'')),top=el('div','tk'),mid=el('div','tm'),rt=el('div','tr'),sub=el('div','m');
  mid.append(el('b',0,x.s),sub);sub.classList.add('sec');rt.classList.add('sec');
  if(u)sub.textContent=f(x.q,2)+' USDT';
- else{const sp=el('span','fix',f(x.q,6)+' · сер. '+(a?f(a,6):'—')+' → зараз '+(p?f(p,6):'ціни нема, натисніть'));
-  if(!p){sp.style.textDecoration='underline';sp.onclick=async e=>{e.stopPropagation();const r=await ask('Ціна '+x.s,[{l:'USDT за 1 '+x.s,v:''}],'Зберегти');const v=r&&nv(r[0]);if(v>0){S.px[x.s]=v;upd()}}}
-  sub.append(sp)}
+ else{sub.textContent=f(x.q,6)+(p?'':' · ціни нема, натисніть');
+  if(!p){sub.classList.add('fix');sub.style.textDecoration='underline';sub.onclick=async e=>{e.stopPropagation();const r=await ask('Ціна '+x.s,[{l:'USDT за 1 '+x.s,v:''}],'Зберегти');const v=r&&nv(r[0]);if(v>0){S.px[x.s]=v;upd()}}}
+  else det=el('div','m det sec','Середня '+(a?f(a,6):'—')+' → зараз '+f(p,6)+' USDT'+(a?' · '+sg(x.q*(p-a))+' USDT':''))}
  rt.append(el('b',0,f(x.q*p)+' USDT'));
- if(!u&&a&&p){const pl=x.q*(p-a),e=el('div',0,sg(pl)+' ('+sg((p/a-1)*100)+'%)');col(e,pl);rt.append(e)}
- top.append(icn(x.s),mid,rt);card.append(top);
+ if(!u&&a&&p){const pl=x.q*(p-a),e=el('span',0,' · '+sg((p/a-1)*100)+'%');col(e,pl);rt.append(e)}
+ top.append(mid,rt);card.append(top);if(det)card.append(det);
  const act=el('div','act'),B=(t,fn,c)=>{const e=el('button',c||'g',t);e.onclick=ev=>{ev.stopPropagation();fn()};return e};
  let more=null;
  if(u)act.append(B('Змінити баланс',()=>setq(x)));
@@ -360,7 +367,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset
 $('bto').onclick=()=>{$('bset').hidden=!$('bset').hidden;if(!$('bset').hidden)fillBank()};
 [7,30,0].forEach(n=>$('r'+n).onclick=()=>{RG=n;S.rg=n;chart();save()});
 ['u','r'].forEach(m=>$('v'+m.toUpperCase()).onclick=()=>{S.cm=m;chart();save()});
-const VER='бета · збірка 30 · 15.10.2026';$('ver').textContent='Версія додатка: '+VER;
+const VER='бета · збірка 31 · 15.10.2026';$('ver').textContent='Версія додатка: '+VER;
 const thUI=()=>{document.documentElement.dataset.theme=S.theme||'auto';$('thm').textContent='Тема: '+({auto:'як на телефоні',light:'світла',dark:'темна'})[S.theme||'auto']};
 $('thm').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'auto'}[S.theme||'auto'];thUI();save()};thUI();
 $('eye').onclick=()=>{S.hide=!S.hide;hideUI();save()};hideUI();
