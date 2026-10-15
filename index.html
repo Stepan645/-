@@ -52,7 +52,7 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 <section data-tab="ov">
 <div class="c" id="pc" hidden><h2>Очікуються нарахування</h2><div id="pl2"></div></div>
 <div class="c"><div class="m">Разом</div><div class="big" id="tH"></div><div class="m" id="tU"></div>
-<div class="s m" style="margin-top:6px"><span>WhiteBIT <b id="sW"></b> USDT · банк <b id="sB"></b> ₴</span></div>
+<div class="s m" style="margin-top:6px"><span>WhiteBIT <b id="sW"></b> USDT · банк <b id="sB"></b> ₴<span id="sU"></span></span></div>
 <div class="s m"><span>Прибуток по токенах</span><b id="pl"></b></div>
 <div class="s m"><span id="st"></span><a href="#" id="rf" style="color:var(--a)">Оновити</a></div><div class="m" id="bkr" style="cursor:pointer;margin-top:4px"></div></div>
 <details><summary>Докладніше</summary>
@@ -87,6 +87,11 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 <div class="m" style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin:6px 0 2px"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span></div>
 <div id="cal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
 <div class="m" style="margin-top:6px">Зелені дні — нараховано, з рамкою — заплановано. Торкнись дня, щоб додати, змінити або видалити нарахування (сума 0 — видалити).</div></div>
+<div class="c"><h2>Долари (Моно)</h2>
+<div class="s"><span>Зараз</span><b id="un"></b></div>
+<div class="m sec" id="ux"></div>
+<div class="g2" style="margin-top:8px"><button class="g" id="ubuy">Купив $</button><button class="g" id="usell">Продав $</button></div>
+<button class="g" id="urt" style="width:100%">Курс зараз</button></div>
 </section>
 
 
@@ -111,7 +116,7 @@ summary{padding:8px 0;font-weight:500;font-size:14px}
 <script>
 const K='nk3',$=i=>document.getElementById(i),td=()=>new Date().toLocaleDateString('sv');
 const f=(n,d=2)=>(+n||0).toLocaleString('uk-UA',{maximumFractionDigits:d}),sg=n=>(n>0?'+':'')+f(n);
-const D=()=>({assets:[{s:'USDT',q:0,c:0}],bank:{bal:0,last:td(),amt:0,per:'m',day:1,paid:0,step:0,k:0,end:''},blog:[],pend:[],feePct:0.1,spread:0,autoUsdt:true,bidMode:false,log:[],hist:[],px:{},rate:41,pxT:0,real:0,goal:0,v:5,real0:0,hide:false,bk:0});
+const D=()=>({assets:[{s:'USDT',q:0,c:0}],usd:{q:0,c:0,rt:0,real:0},bank:{bal:0,last:td(),amt:0,per:'m',day:1,paid:0,step:0,k:0,end:''},blog:[],pend:[],feePct:0.1,spread:0,autoUsdt:true,bidMode:false,log:[],hist:[],px:{},rate:41,pxT:0,real:0,goal:0,v:5,real0:0,hide:false,bk:0});
 const okS=R=>!!R&&typeof R==='object'&&Array.isArray(R.assets)&&R.assets.every(x=>x&&typeof x.s==='string')&&(R.log===undefined||Array.isArray(R.log))&&(R.hist===undefined||Array.isArray(R.hist))&&(R.bank===undefined||(!!R.bank&&typeof R.bank==='object'));
 const fin=v=>typeof v==='number'&&isFinite(v),okI=R=>okS(R)&&R.assets.every(x=>(x.q===undefined||fin(+x.q))&&(x.c===undefined||fin(+x.c)))&&(R.log===undefined||R.log.every(o=>o&&typeof o==='object'&&typeof o.s==='string'&&fin(+o.q)&&(o.p===undefined||fin(+o.p))&&['b','s','a','d','r'].includes(o.t)))&&(R.blog===undefined||(Array.isArray(R.blog)&&R.blog.every(o=>o&&fin(+o.a))))&&(R.hist===undefined||R.hist.every(o=>o&&typeof o.d==='string'&&fin(+o.u)))&&(R.bank===undefined||['bal','amt','step','paid','k','k0','day'].every(k=>R.bank[k]===undefined||fin(+R.bank[k])));
 let S,raw='{}';try{raw=localStorage.getItem(K)||'{}';const R=JSON.parse(raw);
@@ -197,10 +202,11 @@ function nextTop(){const b=S.bank;if(!(+b.amt||+b.step))return'Автопопо�
  const end=b.end?new Date(b.end+'T00:00:00'):null,k=(+b.k||0)+S.pend.length;
  for(let i=0;i<400;i++){d.setDate(d.getDate()+1);if(end&&d>end)break;if(match(d,b))return'Наступне: '+d.toLocaleDateString('uk-UA',{day:'numeric',month:'long'})+' — '+f((+b.amt||0)+(+b.step||0)*k,0)+' ₴'}
  return'Автопоповнення завершено'}
+function usdVal(){const u=S.usd||{},q=+u.q||0;return q>0?q*(+u.rt>0?+u.rt:u.c/q):0}
 function calc(){if(!S.blog)S.blog=[];if(!S.pend)S.pend=[];tick();let w=0,cost=0,val=0,cu=0;
  S.assets.forEach(x=>{const v=x.q*pr(x.s);w+=v;if(x.s!=='USDT'&&x.c>0&&pr(x.s)){cost+=x.c;val+=v;cu+=x.cu||0}});
- const bk=bankNow(),r=rateEff(),U=w+bk/r,miss=S.assets.some(x=>x.s!=='USDT'&&x.q>0&&!pr(x.s));
- $('tU').textContent=f(U)+' USDT';$('tH').textContent=f(U*r,0)+' ₴';$('sW').textContent=f(w);$('sB').textContent=f(bk,0);$('bn').textContent=f(bk,0)+' ₴';
+ const bk=bankNow(),r=rateEff(),uv=usdVal(),U=w+(bk+uv)/r,miss=S.assets.some(x=>x.s!=='USDT'&&x.q>0&&!pr(x.s));
+ $('tU').textContent=f(U)+' USDT';$('tH').textContent=f(U*r,0)+' ₴';$('sW').textContent=f(w);$('sB').textContent=f(bk,0);$('bn').textContent=f(bk,0)+' ₴';{const us=S.usd||{},uq=+us.q||0,ua=uq>0?us.c/uq:0,ur=+us.rt>0?+us.rt:ua;$('sU').textContent=uq>0?' · $ ≈ '+f(uv,0)+' ₴':'';$('un').textContent=uq>0?'$'+f(uq)+' ≈ '+f(uv,0)+' ₴':'—';$('ux').textContent=uq>0?'Середній курс '+f(ua,2)+' ₴ · зараз '+f(ur,2)+' ₴ · '+sg(uv-us.c)+' ₴'+(+us.real?' · зафіксовано '+sg(+us.real)+' ₴':''):'Ще немає. Натисни «Купив $».'}
  const pl=val-cost;$('pl').textContent=cost?sg(pl)+' USDT ('+sg(pl/cost*100)+'%) · '+sg(val*r-cu)+' ₴':'—';cost&&col($('pl'),pl);
  $('rl').textContent=sg(S.real)+' USDT · '+sg(S.realU||0)+' ₴';col($('rl'),S.real);
  $('st').textContent=(S.pxT?'Ціни'+(S.src?' ('+S.src+')':'')+': '+new Date(S.pxT).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short'})+' · 1 USDT = '+f(r)+' ₴':'Ціни ще не завантажені')+(pxErr?' · не вдалося оновити':'')+(miss?' · ⚠ немає ціни для деяких токенів, сума занижена':'')+(S.pxT&&Date.now()-S.pxT>36e5?' · ⚠ ціни застарілі':'');
@@ -298,6 +304,10 @@ $('bsv').onclick=()=>{tick();const b=S.bank,a=nn($('ba').value)||0,st=nn($('bt')
  S.pend=[];const n=gen();fillBank();calc();toast(n?'Збережено. Очікує підтвердження: '+n:'Збережено')};
 $('boff').onclick=()=>{tick();const b=S.bank;b.amt=0;b.step=0;b.k=0;b.last=td();S.pend=[];fillBank();calc();toast('Автопоповнення вимкнено')};
 $('bad').onclick=()=>bAdd();
+$('ubuy').onclick=async()=>{const r=await ask('Купив долари',[{l:'Кількість, $',v:''},{l:'Курс, ₴ за 1 $',v:''}],'Зберегти');if(!r)return;const q=nv(r[0]),p=nv(r[1]);if(!(q>0)||!(p>0)){toast('Введіть кількість і курс більше нуля');return}snap('Долари додано');const u=S.usd||(S.usd={q:0,c:0,rt:0,real:0});u.q=+(u.q+q).toFixed(2);u.c=r2(u.c+q*p);calc()};
+$('usell').onclick=async()=>{const u=S.usd||(S.usd={q:0,c:0,rt:0,real:0});if(!(u.q>0)){toast('Доларів ще немає');return}const r=await ask('Продав долари',[{l:'Кількість, $',v:''},{l:'Курс, ₴ за 1 $',v:''}],'Зберегти');if(!r)return;const q=nv(r[0]),p=nv(r[1]);if(!(q>0)||!(p>0)){toast('Введіть кількість і курс більше нуля');return}if(q>u.q+1e-9){toast('У вас лише $'+f(u.q));return}snap('Продаж записано');const a=u.c/u.q;u.real=r2((+u.real||0)+q*(p-a));u.q=+(u.q-q).toFixed(2);u.c=u.q>0?r2(u.c-a*q):0;calc()};
+$('urt').onclick=async()=>{const u=S.usd||(S.usd={q:0,c:0,rt:0,real:0});const r=await ask('Курс Моно зараз',[{l:'Курс продажу, ₴ за 1 $ (порожньо — за ціною покупки)',v:u.rt||''}],'Зберегти');if(!r)return;const v=nv(r[0]);u.rt=v>0?v:0;calc()};
+
 const rateEff=()=>(+S.rate||1)*(1-(+S.spread||0)/100),ust=()=>S.assets.find(x=>x.s==='USDT'),ue=o=>o.u?(o.t==='b'?-(o.q*o.p+(+o.fee||0)):(o.q*o.p-(+o.fee||0))):0,
  feeOf=(t,q,p)=>String(t==null?'':t).trim()===''?q*p*(+S.feePct||0)/100:(nv(t)||0);
 function addOp(o){if(replay(S.log).ok&&!replay([...S.log,o]).ok){toast('На цю дату токенів ще не було');return}snap(o.t==='r'?'Нагороду додано':'Операцію додано');
@@ -360,14 +370,14 @@ if(S.v<5){const b=S.bank||(S.bank=D().bank),d=new Date((b.asOf||td())+'T00:00:00
  const sum=n*a+st*(n*k+n*(n-1)/2);
  b.bal=r2((+b.bal||0)+sum);b.paid=r2((+b.paid||0)+sum);b.k=k+n;b.last=td();delete b.asOf;delete b.k0;if(!S.blog)S.blog=[];S.v=5}
 rebuild();
-['tU','tH','gt','al','ab','pd','ch','hs','lg','nx','ms','go','ba','bt','bi'].forEach(i=>$(i).classList.add('sec'));['sW','pl','rl','bn'].forEach(i=>$(i).closest('.s').classList.add('sec'));
+['tU','tH','gt','al','ab','pd','ch','hs','lg','nx','ms','go','ba','bt','bi'].forEach(i=>$(i).classList.add('sec'));['sW','pl','rl','bn','un'].forEach(i=>$(i).closest('.s').classList.add('sec'));
 const hideUI=()=>{document.body.classList.toggle('hide',!!S.hide);$('eye').textContent=S.hide?'🙈':'👁'};
 function tab(n){document.querySelectorAll('[data-tab]').forEach(e=>e.hidden=e.dataset.tab!==n);document.querySelectorAll('#tabs button').forEach(b=>b.className=b.dataset.t===n?'on':'');scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));tab('ov');
 $('bto').onclick=()=>{$('bset').hidden=!$('bset').hidden;if(!$('bset').hidden)fillBank()};
 [7,30,0].forEach(n=>$('r'+n).onclick=()=>{RG=n;S.rg=n;chart();save()});
 ['u','r'].forEach(m=>$('v'+m.toUpperCase()).onclick=()=>{S.cm=m;chart();save()});
-const VER='бета · збірка 31 · 15.10.2026';$('ver').textContent='Версія додатка: '+VER;
+const VER='бета · збірка 32 · 15.10.2026';$('ver').textContent='Версія додатка: '+VER;
 const thUI=()=>{document.documentElement.dataset.theme=S.theme||'auto';$('thm').textContent='Тема: '+({auto:'як на телефоні',light:'світла',dark:'темна'})[S.theme||'auto']};
 $('thm').onclick=()=>{S.theme={auto:'light',light:'dark',dark:'auto'}[S.theme||'auto'];thUI();save()};thUI();
 $('eye').onclick=()=>{S.hide=!S.hide;hideUI();save()};hideUI();
